@@ -1,0 +1,27 @@
+# 忽略临时与缓存文件
+.workbuddy/tmp/
+.workbuddy/clipboard-images/
+.workbuddy/connectors/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 日志
+*.log
+logs/
