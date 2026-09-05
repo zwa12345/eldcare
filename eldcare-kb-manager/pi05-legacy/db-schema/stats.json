@@ -1,0 +1,339 @@
+{
+  "db_size_bytes": 118784,
+  "tables": {
+    "categories": {
+      "row_count": 13,
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 1
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "slug",
+          "type": "TEXT",
+          "notnull": 1,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "icon",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "sort_order",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": "CURRENT_TIMESTAMP",
+          "pk": 0
+        }
+      ],
+      "indexes": [
+        "sqlite_autoindex_categories_2",
+        "sqlite_autoindex_categories_1"
+      ]
+    },
+    "movies": {
+      "row_count": 55,
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 1
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "title_en",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "year",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "poster",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "cover_url",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "rating",
+          "type": "REAL",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "genre",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "country",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "director",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "actors",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "summary",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "video_url",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "subtitle_url",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "file_path",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "file_size",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "duration",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "source",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "views",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "likes",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "download_count",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": "'pending'",
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": "CURRENT_TIMESTAMP",
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": "CURRENT_TIMESTAMP",
+          "pk": 0
+        },
+        {
+          "name": "is_favorite",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "is_bookmark",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "tags",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "magnet",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        }
+      ],
+      "indexes": []
+    },
+    "search_history": {
+      "row_count": 74,
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 1
+        },
+        {
+          "name": "keyword",
+          "type": "TEXT",
+          "notnull": 1,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": "CURRENT_TIMESTAMP",
+          "pk": 0
+        }
+      ],
+      "indexes": []
+    },
+    "sqlite_sequence": {
+      "row_count": 4,
+      "columns": [
+        {
+          "name": "name",
+          "type": "",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "seq",
+          "type": "",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        }
+      ],
+      "indexes": []
+    },
+    "watch_history": {
+      "row_count": 39,
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 1
+        },
+        {
+          "name": "movie_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "name": "position",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": "0",
+          "pk": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": "CURRENT_TIMESTAMP",
+          "pk": 0
+        }
+      ],
+      "indexes": []
+    }
+  }
+}

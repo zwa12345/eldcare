@@ -1,0 +1,4 @@
+id | name | slug | icon | sort_order | created_at
+1 | 全部 | all | 🎬 | 0 | 2026-09-01 02:44:35
+2 | 动作 | action | 💥 | 1 | 2026-09-01 02:44:35
+3 | 喜剧 | comedy | 😂 | 2 | 2026-09-01 02:44:35

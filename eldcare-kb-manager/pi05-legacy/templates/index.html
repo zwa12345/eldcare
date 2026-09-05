@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>🎬 家庭影院</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- ========== 顶部导航 ========== -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">🎬 <span>家庭影院</span></h1>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" onclick="showSearch()" title="搜索">🔍</button>
+        <button class="btn-icon" onclick="showSettings()" title="设置">⚙️</button>
+      </div>
+    </header>
+
+    <!-- ========== 首页内容 ========== -->
+    <main class="main" id="main-view">
+      <!-- 搜索框 -->
+      <div class="search-section">
+        <div class="search-box-main">
+          <input type="text" id="main-search-input" placeholder="搜索电影..." onkeydown="if(event.key==='Enter')mainSearch()">
+          <button class="btn-search" onclick="mainSearch()">🔍</button>
+        </div>
+      </div>
+
+      <!-- 分类导航 -->
+      <div class="section">
+        <div class="section-title">📂 分类</div>
+        <div class="category-grid" id="category-grid"></div>
+      </div>
+
+      <!-- 最近下载 -->
+      <div class="section">
+        <div class="section-title">🆕 最新下载</div>
+        <div class="movie-scroll" id="recent-scroll"></div>
+      </div>
+    </main>
+
+    <!-- ========== 分类页 ========== -->
+    <div class="view hidden" id="category-view">
+      <div class="view-header">
+        <button class="btn-back" onclick="showMain()">← 返回</button>
+        <h2 id="category-title">分类</h2>
+      </div>
+      <div class="filter-bar">
+        <select id="sort-select" onchange="loadCategoryMovies()">
+          <option value="updated_at-desc">最近更新</option>
+          <option value="rating-desc">评分最高</option>
+          <option value="created_at-desc">最新添加</option>
+          <option value="views-desc">最多播放</option>
+          <option value="title-asc">标题 A-Z</option>
+          <option value="year-desc">年份最新</option>
+        </select>
+      </div>
+      <div class="movie-grid" id="category-movies"></div>
+      <div class="pagination" id="category-pagination"></div>
+      <div class="load-more" id="load-more" onclick="loadMore()">加载更多...</div>
+    </div>
+
+    <!-- ========== 搜索页 ========== -->
+    <div class="view hidden" id="search-view">
+      <div class="view-header">
+        <button class="btn-back" onclick="showMain()">← 返回</button>
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="搜索电影名称、导演、演员..." oninput="debounceSearch(this.value)" onkeydown="if(event.key==='Enter')doSearch()">
+          <button class="btn-search" onclick="doSearch()">🔍</button>
+        </div>
+      </div>
+      <div class="search-history" id="search-history"></div>
+      <div class="movie-grid" id="search-results"></div>
+    </div>
+
+    <!-- ========== 设置页 ========== -->
+    <div class="view hidden" id="settings-view">
+      <div class="view-header">
+        <button class="btn-back" onclick="showMain()">← 返回</button>
+        <h2>⚙️ 设置</h2>
+      </div>
+      <div class="settings-list">
+        <div class="setting-item">
+          <label>🎬 爬取豆瓣 Top250</label>
+          <button class="btn-action" onclick="crawlDouban()">开始爬取</button>
+        </div>
+        <div class="setting-item">
+          <label>📁 扫描本地文件夹</label>
+          <button class="btn-action" onclick="crawlLocal()">扫描电影</button>
+        </div>
+        <div class="setting-item">
+          <label>🔍 BT 磁力搜索</label>
+          <button class="btn-action" onclick="showBTSearch()">搜索</button>
+        </div>
+        <div class="setting-item">
+          <label>🗑️ 清空搜索历史</label>
+          <button class="btn-action btn-danger" onclick="clearHistory()">清空</button>
+        </div>
+        <div class="setting-item">
+          <label>🌐 服务器地址</label>
+          <code id="server-url"></code>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== BT搜索页 ========== -->
+    <div class="view hidden" id="bt-view">
+      <div class="view-header">
+        <button class="btn-back" onclick="showSettings()">← 返回</button>
+        <div class="search-box">
+          <input type="text" id="bt-search-input" placeholder="输入电影名称搜索 BT 资源..." onkeydown="if(event.key==='Enter')doBTSearch()">
+          <button class="btn-search" onclick="doBTSearch()">🔍</button>
+        </div>
+      </div>
+      <div class="movie-grid" id="bt-results"></div>
+    </div>
+
+    <!-- ========== 加载更多 ========== -->
+    <div class="load-more" id="load-more" onclick="loadMore()">加载更多...</div>
+  </div>
+
+  <!-- ========== 电影卡片模板 ========== -->
+  <template id="movie-card-template">
+    <div class="movie-card" onclick="playMovie(this.dataset.id)">
+      <div class="movie-poster">
+        <img src="" alt="" loading="lazy">
+        <div class="movie-overlay">▶ 播放</div>
+        <div class="movie-rating"></div>
+        <div class="movie-year"></div>
+        <button class="movie-manage" title="管理" onclick="event.stopPropagation();showManageMenu(this.dataset.id)" data-id="">⋯</button>
+      </div>
+      <div class="movie-info">
+        <div class="movie-title"></div>
+        <div class="movie-meta"></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ========== 分类卡片模板 ========== -->
+  <template id="category-template">
+    <div class="category-card" onclick="showCategory(this.dataset.slug)">
+      <div class="category-icon"></div>
+      <div class="category-name"></div>
+      <div class="category-count"></div>
+    </div>
+  </template>
+
+  <!-- ========== 管理弹窗 ========== -->
+  <div class="modal-overlay hidden" id="manage-modal">
+    <div class="modal-box">
+      <div class="modal-title">🎬 管理电影</div>
+      <label class="modal-label">中文名</label>
+      <input type="text" id="manage-title" class="modal-input" placeholder="中文名">
+      <label class="modal-label">英文名</label>
+      <input type="text" id="manage-title-en" class="modal-input" placeholder="英文名">
+      <label class="modal-label">分类（逗号分隔，如：动作,犯罪,剧情）</label>
+      <input type="text" id="manage-genre" class="modal-input" placeholder="动作,犯罪,剧情">
+      <div class="genre-chips" id="manage-genre-chips"></div>
+      <div class="modal-actions">
+        <button class="btn-action btn-danger" id="manage-delete" onclick="deleteMovieManage()">🗑️ 删除</button>
+        <button class="btn-action" onclick="saveMovieManage()">💾 保存</button>
+        <button class="btn-action btn-cancel" onclick="closeManageModal()">取消</button>
+      </div>
+      <div class="modal-tip" id="manage-tip"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    // ========== 全局状态 ==========
+    let state = {
+      view: 'main',
+      category: null,
+      keyword: null,
+      page: 1,
+      sort: 'updated_at',
+      order: 'desc',
+      loading: false,
+      hasMore: false,
+    };
+
+    // ========== 初始化 ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('server-url').textContent = window.location.origin;
+      loadCategories();
+      loadSection('recent', '/api/movies/recent');
+    });
+
+    // ========== 导航 ==========
+    function showMain() { switchView('main'); }
+    function showSearch() { switchView('search'); loadSearchHistory(); }
+    function showSettings() { switchView('settings'); }
+    function showBTSearch() { switchView('bt'); }
+
+    function switchView(name) {
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      document.getElementById(name + '-view').classList.remove('hidden');
+      state.view = name;
+    }
+
+    // ========== 首页搜索 ==========
+    function mainSearch() {
+      const kw = document.getElementById('main-search-input').value.trim();
+      if (!kw) return;
+      document.getElementById('search-input').value = kw;
+      showSearch();
+      doSearch();
+    }
+
+    // ========== 数据加载 ==========
+    async function api(url) {
+      try {
+        const r = await fetch(url);
+        const json = await r.json();
+        return json.data || [];
+      } catch(e) { console.error(e); return []; }
+    }
+
+    function loadStats() {
+      api('/api/movies/stats').then(data => {
+        document.getElementById('stat-total').textContent = data.total || 0;
+        document.getElementById('stat-ready').textContent = data.ready || 0;
+        document.getElementById('stat-views').textContent = data.views || 0;
+        const sizeGB = ((data.size || 0) / 1024**3).toFixed(1);
+        document.getElementById('stat-size').textContent = sizeGB > 0 ? sizeGB + 'G' : '--';
+      });
+    }
+
+    async function loadCategories() {
+      const cats = await api('/api/categories');
+      const grid = document.getElementById('category-grid');
+      grid.innerHTML = '';
+      const tmpl = document.getElementById('category-template');
+      cats.forEach(cat => {
+        if (cat.slug === 'all') return;
+        const el = tmpl.content.cloneNode(true);
+        el.querySelector('.category-icon').textContent = cat.icon || '🎬';
+        el.querySelector('.category-name').textContent = cat.name;
+        el.querySelector('.category-count').textContent = cat.count || 0;
+        el.querySelector('.category-card').dataset.slug = cat.slug;
+        grid.appendChild(el);
+      });
+    }
+
+    async function loadSection(name, url) {
+      const movies = await api(url);
+      const scroll = document.getElementById(name + '-scroll');
+      scroll.innerHTML = '';
+      movies.forEach(m => scroll.appendChild(buildMovieCard(m)));
+    }
+
+    // ========== 电影卡片 ==========
+    function buildMovieCard(movie) {
+      const tmpl = document.getElementById('movie-card-template');
+      const el = tmpl.content.cloneNode(true);
+      const card = el.querySelector('.movie-card');
+      card.dataset.id = movie.id;
+      el.querySelector('.movie-manage').dataset.id = movie.id;
+      const img = el.querySelector('.movie-poster img');
+      img.src = movie.poster || '/static/placeholder.png';
+      img.alt = movie.title;
+      el.querySelector('.movie-title').textContent = movie.title;
+      el.querySelector('.movie-meta').textContent = [movie.genre, movie.country].filter(Boolean).join(' · ');
+      const ratingEl = el.querySelector('.movie-rating');
+      if (movie.rating > 0) {
+        ratingEl.textContent = '⭐ ' + movie.rating.toFixed(1);
+        ratingEl.style.display = 'block';
+      }
+      const yearEl = el.querySelector('.movie-year');
+      if (movie.year) { yearEl.textContent = movie.year; yearEl.style.display = 'block'; }
+      return el;
+    }
+
+    function playMovie(id) {
+      window.location.href = '/player/' + id;
+    }
+
+    // ========== 管理：改名/分类/删除 ==========
+    let manageMovieId = null;
+    const GENRE_PRESETS = ['动作','喜剧','科幻','爱情','悬疑','恐怖','犯罪','剧情','纪录片','国产','欧美','日韩','动漫','战争','冒险','奇幻','音乐','传记'];
+
+    async function showManageMenu(id) {
+      manageMovieId = id;
+      const data = await fetch('/api/movie/' + id).then(r => r.json()).catch(() => ({}));
+      const m = data.data || {};
+      document.getElementById('manage-title').value = m.title || '';
+      document.getElementById('manage-title-en').value = m.title_en || '';
+      document.getElementById('manage-genre').value = m.genre || '';
+      renderGenreChips(m.genre || '');
+      document.getElementById('manage-tip').textContent = '';
+      document.getElementById('manage-modal').classList.remove('hidden');
+    }
+
+    function renderGenreChips(cur) {
+      const curSet = new Set((cur || '').split(/[,，]/).map(s => s.trim()).filter(Boolean));
+      document.getElementById('manage-genre-chips').innerHTML = GENRE_PRESETS.map(g =>
+        `<span class="genre-chip${curSet.has(g) ? ' active' : ''}" onclick="toggleGenreChip(this, '${g}')">${g}</span>`
+      ).join('');
+    }
+
+    function toggleGenreChip(el, g) {
+      el.classList.toggle('active');
+      const input = document.getElementById('manage-genre');
+      const curSet = new Set(input.value.split(/[,，]/).map(s => s.trim()).filter(Boolean));
+      if (curSet.has(g)) curSet.delete(g); else curSet.add(g);
+      input.value = [...curSet].join(',');
+    }
+
+    function closeManageModal() {
+      document.getElementById('manage-modal').classList.add('hidden');
+      manageMovieId = null;
+    }
+
+    async function saveMovieManage() {
+      const title = document.getElementById('manage-title').value.trim();
+      const titleEn = document.getElementById('manage-title-en').value.trim();
+      const genre = document.getElementById('manage-genre').value.trim();
+      if (!title) { showTip('中文名不能为空', true); return; }
+      const payload = { title, title_en: titleEn, genre };
+      const res = await fetch('/api/movie/' + manageMovieId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).catch(() => ({}));
+      if (res.code === 0) {
+        closeManageModal();
+        refreshCurrentView();
+      } else {
+        showTip(res.message || '保存失败', true);
+      }
+    }
+
+    async function deleteMovieManage() {
+      const title = document.getElementById('manage-title').value.trim() || '这部电影';
+      if (!confirm(`确定删除「${title}」吗？\n将同时删除视频文件和数据库记录，不可恢复！`)) return;
+      const res = await fetch('/api/movie/' + manageMovieId + '?purge=1', { method: 'DELETE' })
+        .then(r => r.json()).catch(() => ({}));
+      if (res.code === 0) {
+        closeManageModal();
+        alert('✅ 已删除' + (res.data?.removed?.length ? `：\n${res.data.removed.map(p => p.split('/').pop()).join('\n')}` : ''));
+        refreshCurrentView();
+      } else {
+        showTip(res.message || '删除失败', true);
+      }
+    }
+
+    function showTip(msg, isError) {
+      const tip = document.getElementById('manage-tip');
+      tip.textContent = msg;
+      tip.style.color = isError ? '#ff6b6b' : '#4ade80';
+    }
+
+    function refreshCurrentView() {
+      if (state.view === 'search') { doSearch(); return; }
+      if (state.view === 'category') { loadCategoryMovies(); return; }
+      // 首页：刷新分类 + 最近下载
+      loadCategories();
+      loadSection('recent', '/api/movies/recent');
+    }
+
+    // ========== 分类页 ==========
+    function showCategory(slug) {
+      state.category = slug;
+      state.page = 1;
+      switchView('category');
+      const cats = { action:'动作', comedy:'喜剧', scifi:'科幻', romance:'爱情', mystery:'悬疑', horror:'恐怖', documentary:'纪录片', chinese:'国产', western:'欧美', asian:'日韩', anime:'动漫' };
+      document.getElementById('category-title').textContent = cats[slug] || slug;
+      loadCategoryMovies();
+    }
+
+    async function loadCategoryMovies() {
+      const sortVal = document.getElementById('sort-select').value;
+      const [sort, order] = sortVal.split('-');
+      state.sort = sort; state.order = order;
+      const url = `/api/movies?category=${encodeURIComponent(state.category)}&page=${state.page}&sort=${sort}&order=${order}`;
+      const data = await fetch(url).then(r => r.json()).catch(() => ({data: {items:[], pages:0}}));
+      const grid = document.getElementById('category-movies');
+      if (state.page === 1) grid.innerHTML = '';
+      (data.data?.items || []).forEach(m => grid.appendChild(buildMovieCard(m)));
+      state.hasMore = state.page < (data.data?.pages || 0);
+      document.getElementById('load-more').style.display = state.hasMore ? 'block' : 'none';
+    }
+
+    function loadMore() {
+      if (!state.hasMore || state.loading) return;
+      state.page++;
+      loadCategoryMovies();
+    }
+
+    // ========== 搜索 ==========
+    let searchTimer = null;
+    function debounceSearch(val) {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { if (val.length > 1) doSearch(); }, 600);
+    }
+
+    async function doSearch() {
+      const kw = document.getElementById('search-input').value.trim();
+      if (!kw) return;
+      state.keyword = kw;
+      state.page = 1;
+      const url = `/api/search?q=${encodeURIComponent(kw)}`;
+      const data = await fetch(url).then(r => r.json()).catch(() => ({}));
+      const grid = document.getElementById('search-results');
+      grid.innerHTML = '';
+      (data.data?.items || []).forEach(m => grid.appendChild(buildMovieCard(m)));
+    }
+
+    async function loadSearchHistory() {
+      const hist = await api('/api/search/history');
+      const el = document.getElementById('search-history');
+      if (!hist.length) { el.innerHTML = ''; return; }
+      el.innerHTML = '<div class="history-title">最近搜索</div>' + hist.map(k =>
+        `<span class="history-item" onclick="document.getElementById('search-input').value='${k}';doSearch()">${k}</span>`
+      ).join('');
+    }
+
+    async function clearHistory() {
+      await fetch('/api/search/history', {method:'DELETE'});
+      loadSearchHistory();
+    }
+
+    // ========== 爬虫 ==========
+    async function crawlDouban() {
+      if (!confirm('开始爬取豆瓣 Top250（10页共250部）？\n预计需要5-10分钟...')) return;
+      const btn = event.target;
+      btn.textContent = '爬取中...'; btn.disabled = true;
+      const result = await fetch('/api/crawl/douban/all').then(r => r.json());
+      btn.textContent = '开始爬取'; btn.disabled = false;
+      alert(`爬虫已在后台运行，完成后刷新页面查看结果`);
+      loadStats();
+    }
+
+    async function crawlLocal() {
+      const folder = prompt('请输入要扫描的文件夹路径（留空则使用默认目录）:', '');
+      const url = '/api/crawl/local' + (folder ? '?folder=' + encodeURIComponent(folder) : '');
+      const result = await fetch(url).then(r => r.json());
+      alert(`扫描完成：共${result.data?.total || 0}部，新增${result.data?.added || 0}部`);
+      loadStats();
+    }
+
+    async function doBTSearch() {
+      const kw = document.getElementById('bt-search-input').value.trim();
+      if (!kw) return;
+      const results = await fetch(`/api/crawl/bt?q=${encodeURIComponent(kw)}`).then(r => r.json()).catch(() => ({}));
+      const grid = document.getElementById('bt-results');
+      grid.innerHTML = '';
+      (results.data || []).forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'bt-item';
+        div.innerHTML = `<div class="bt-title">${r.title}</div><div class="bt-meta">${r.source} · ${r.size || ''}</div><button class="btn-action" onclick="copyMagnet(this.dataset.magnet)" data-magnet="${r.magnet || ''}">📋 复制磁力链</button>`;
+        grid.appendChild(div);
+      });
+      if (!results.data?.length) grid.innerHTML = '<div class="empty">未找到结果，可尝试其他关键词</div>';
+    }
+
+    function copyMagnet(magnet) {
+      navigator.clipboard.writeText(magnet).then(() => alert('磁力链已复制到剪贴板'));
+    }
+  </script>
+</body>
+</html>

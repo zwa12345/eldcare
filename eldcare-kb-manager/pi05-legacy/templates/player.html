@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>{{ movie.title }} - 家庭影院</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="player-body">
+  <!-- 顶部返回栏 -->
+  <div class="player-topbar">
+    <a href="/" class="btn-back">← 返回</a>
+    <span class="player-title">{{ movie.title }}</span>
+    <button class="btn-icon" onclick="toggleFavorite({{ movie.id }})" id="fav-btn" title="收藏">♡</button>
+  </div>
+
+  <!-- WebTorrent 播放器 -->
+  <div class="player-container" id="player-container">
+    <video id="video-player" controls autoplay playsinline
+           poster="{{ movie.poster or '' }}">
+    </video>
+    <!-- 磁力链加载状态 -->
+    <div id="torrent-status" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;display:none;"></div>
+  </div>
+
+  <!-- 遥控器面板（手机端显示） -->
+  <div class="remote-control" id="remote-control">
+    <div class="remote-dpad">
+      <div class="dpad-center"></div>
+    </div>
+    <div class="remote-row">
+      <button class="remote-btn" onclick="seek(-30)">⏪ -30s</button>
+      <button class="remote-btn" onclick="togglePlay()">⏯ 播放/暂停</button>
+      <button class="remote-btn" onclick="seek(30)">⏩ +30s</button>
+    </div>
+    <div class="remote-row">
+      <button class="remote-btn" onclick="volumeChange(-0.1)">🔉</button>
+      <button class="remote-btn" onclick="toggleMute()">🔇</button>
+      <button class="remote-btn" onclick="volumeChange(0.1)">🔊</button>
+    </div>
+    <div class="remote-row">
+      <button class="remote-btn" onclick="toggleFullscreen()">⛶ 全屏</button>
+      <button class="remote-btn" onclick="speedCycle()">⏩ 倍速</button>
+      <button class="remote-btn" onclick="togglePip()">📺 画中画</button>
+    </div>
+    <div class="remote-progress">
+      <input type="range" id="progress-bar" min="0" max="100" value="0" oninput="previewSeek(this.value)" onchange="seekTo(this.value)">
+      <div class="time-display">
+        <span id="current-time">00:00</span> / <span id="total-time">00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 电影信息 -->
+  <div class="movie-detail">
+    <div class="detail-header">
+      <img class="detail-poster" src="{{ movie.poster or '/static/placeholder.png' }}" alt="{{ movie.title }}">
+      <div class="detail-info">
+        <h2>{{ movie.title }}
+          {% if movie.title_en %}<small>{{ movie.title_en }}</small>{% endif %}
+        </h2>
+        <div class="detail-meta">
+          {% if movie.year %}<span>{{ movie.year }}年</span>{% endif %}
+          {% if movie.country %}<span>{{ movie.country }}</span>{% endif %}
+          {% if movie.rating > 0 %}<span>⭐ {{ movie.rating }}</span>{% endif %}
+        </div>
+        <div class="detail-genre">{% if movie.genre %}{{ movie.genre }}{% endif %}</div>
+      </div>
+    </div>
+    {% if movie.summary %}
+    <div class="detail-summary">
+      <div class="detail-label">简介</div>
+      <p>{{ movie.summary }}</p>
+    </div>
+    {% endif %}
+    {% if movie.director %}
+    <div class="detail-row"><span class="detail-label">导演</span><span>{{ movie.director }}</span></div>
+    {% endif %}
+    {% if movie.actors %}
+    <div class="detail-row"><span class="detail-label">演员</span><span>{{ movie.actors }}</span></div>
+    {% endif %}
+    <div class="detail-stats">
+      <span>👁 {{ movie.views }}次播放</span>
+      {% if movie.file_size %}
+      <span>📦 {{ (movie.file_size|int / 1024**3)|round(2) }} GB</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
+  <script>
+    const video = document.getElementById('video-player');
+    const statusEl = document.getElementById('torrent-status');
+    const progressBar = document.getElementById('progress-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const totalTimeEl = document.getElementById('total-time');
+    let speed = 1.0;
+    let torrentClient = null;
+    const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
+    // ── 播放: 本地文件优先，否则 WebTorrent ─────────────────
+    async function initTorrent() {
+      const movieId = {{ movie.id }};
+      const resp = await fetch(`/api/movie/${movieId}`);
+      const data = await resp.json();
+      const movie = data.data;
+
+      // ✅ 本地已下载文件：直接流式播放（支持拖拽）
+      if (movie && movie.file_path) {
+        statusEl.style.display = 'none';
+        video.src = `/api/video/${movieId}/stream`;
+        video.load();
+        return;
+      }
+
+      // 无本地文件：WebTorrent 边下边播
+      const magnet = movie && movie.video_url;
+
+      if (!magnet || !magnet.startsWith('magnet:')) {
+        statusEl.textContent = '❌ 无磁力链' + (movie && movie.file_path ? '' : '，也未下载');
+        statusEl.style.display = 'block';
+        return;
+      }
+
+      statusEl.textContent = '🔄 连接种子...';
+      statusEl.style.display = 'block';
+
+      torrentClient = new WebTorrent();
+      torrentClient.add(magnet, (torrent) => {
+        statusEl.style.display = 'none';
+
+        // 优先选 mp4/mkv/avi
+        let file = torrent.files.find(f =>
+          /\.(mp4|mkv|avi|mov|webm)$/i.test(f.name)
+        );
+        if (!file) file = torrent.files[0];
+        if (!file) {
+          statusEl.textContent = '❌ 种子无视频文件';
+          statusEl.style.display = 'block';
+          return;
+        }
+
+        const url = URL.createObjectURL(file.file);
+        video.src = url;
+        video.load();
+
+        file.on('progress', (p) => {
+          const pct = Math.round(p * 100);
+          statusEl.textContent = `📥 ${pct}%  ↓ ${formatSize(torrent.downloadSpeed())}/s`;
+          statusEl.style.display = 'block';
+          if (p > 0.08) statusEl.style.display = 'none';
+        });
+
+        torrent.on('done', () => {
+          statusEl.style.display = 'none';
+        });
+      });
+
+      torrentClient.on('error', (err) => {
+        statusEl.textContent = '❌ 连接失败';
+        statusEl.style.display = 'block';
+      });
+    }
+
+    function formatSize(bytes) {
+      if (bytes > 1024*1024) return (bytes/1024/1024).toFixed(1)+'MB';
+      if (bytes > 1024) return (bytes/1024).toFixed(0)+'KB';
+      return bytes+'B';
+    }
+
+    // ── 进度同步 ─────────────────────────────────────────────
+    let isSeeking = false;
+    video.addEventListener('timeupdate', () => {
+      if (isSeeking) return;  // 拖动中不更新进度条，避免与手指打架
+      if (video.duration) {
+        progressBar.value = (video.currentTime / video.duration) * 100;
+        currentTimeEl.textContent = formatTime(video.currentTime);
+      }
+    });
+    video.addEventListener('loadedmetadata', () => {
+      totalTimeEl.textContent = formatTime(video.duration);
+      fetch('/api/watch/position/{{ movie.id }}').then(r=>r.json()).then(d=>{
+        if (d.data?.position > 10) video.currentTime = d.data.position;
+      });
+    });
+    let saveTimer = null;
+    function savePosition() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        if (video.currentTime > 10) {
+          fetch('/api/watch/position', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({movie_id:{{ movie.id }}, position: Math.floor(video.currentTime)})
+          });
+        }
+      }, 5000);
+    }
+    video.addEventListener('timeupdate', savePosition);
+
+    // ── 控制函数 ──────────────────────────────────────────────
+    function formatTime(s) {
+      if (!s || isNaN(s)) return '00:00';
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.floor(s%60);
+      return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+                   : `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+    function togglePlay() { video.paused ? video.play() : video.pause(); }
+    function seek(delta) { video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime+delta)); }
+    // 拖动中：只更新预览时间，不触发 seek（避免每次滑动都发 Range 请求）
+    function previewSeek(pct) {
+      isSeeking = true;
+      if (video.duration) {
+        progressBar.value = pct;
+        currentTimeEl.textContent = formatTime((pct/100) * video.duration);
+      }
+    }
+    // 松手才真正跳转
+    function seekTo(pct) {
+      video.currentTime = (pct/100) * video.duration;
+      setTimeout(() => { isSeeking = false; }, 500);
+    }
+    function volumeChange(d) { video.volume = Math.max(0, Math.min(1, video.volume+d)); }
+    function toggleMute() { video.muted = !video.muted; }
+    function toggleFullscreen() {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.getElementById('player-container').requestFullscreen();
+    }
+    function speedCycle() {
+      const idx = speeds.indexOf(parseFloat(speed));
+      speed = speeds[(idx+1)%speeds.length];
+      video.playbackRate = speed;
+    }
+    async function togglePip() {
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else if (video.requestPictureInPicture) await video.requestPictureInPicture();
+    }
+    async function toggleFavorite(id) {
+      const r = await fetch(`/api/movie/${id}/favorite`, {method:'POST'});
+      const d = await r.json();
+      document.getElementById('fav-btn').textContent = d.data?.is_favorite ? '❤️' : '♡';
+    }
+
+    // ── 键盘快捷键 ───────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      switch(e.key) {
+        case ' ': e.preventDefault(); togglePlay(); break;
+        case 'ArrowLeft': seek(-10); break;
+        case 'ArrowRight': seek(10); break;
+        case 'ArrowUp': volumeChange(0.1); break;
+        case 'ArrowDown': volumeChange(-0.1); break;
+        case 'f': case 'F': toggleFullscreen(); break;
+        case 'm': case 'M': toggleMute(); break;
+      }
+    });
+
+    // ── 触摸手势 ─────────────────────────────────────────────
+    let touchStartX = 0, touchStartY = 0;
+    video.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, {passive:true});
+    video.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) seek(dx > 0 ? 10 : -10);
+    }, {passive:true});
+
+    // ── 启动 ─────────────────────────────────────────────────
+    initTorrent();
+    window.addEventListener('beforeunload', () => { if (torrentClient) torrentClient.destroy(); });
+  </script>
+</body>
+</html>
