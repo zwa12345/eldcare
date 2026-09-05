@@ -1,6 +1,6 @@
 {
-  "name": "Eldcare 家庭影院",
-  "short_name": "Eldcare",
+  "name": "家庭影院",
+  "short_name": "家庭影院",
   "description": "家庭影院 V2 - 浏览、播放、下载电影",
   "start_url": "/",
   "display": "standalone",
