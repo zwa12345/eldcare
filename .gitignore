@@ -1,3 +1,6 @@
+# 忽略 WorkBuddy 工作数据（私有，不应上仓库）
+.workbuddy/
+
 # 忽略临时与缓存文件
 .workbuddy/tmp/
 .workbuddy/clipboard-images/
