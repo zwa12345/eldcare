@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>🎬 Eldcare 家庭影院</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <span class="logo-emoji">🎬</span>
+      <span class="logo-text">Eldcare</span>
+    </div>
+    <div class="search">
+      <input id="search-input" type="search" placeholder="搜索影片..." autocomplete="off" />
+    </div>
+    <div class="stats" id="stats-pill">--</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="library">影库</button>
+    <button class="tab" data-tab="categories">分类</button>
+    <button class="tab" data-tab="player">播放器</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <main>
+    <!-- 影库 -->
+    <section class="view active" id="view-library">
+      <div class="grid" id="movie-grid">
+        <div class="empty">加载中...</div>
+      </div>
+    </section>
+
+    <!-- 分类 -->
+    <section class="view" id="view-categories">
+      <div class="cat-grid" id="category-grid"></div>
+    </section>
+
+    <!-- 播放器 -->
+    <section class="view" id="view-player">
+      <div class="player-wrap">
+        <video id="player" controls preload="metadata" playsinline></video>
+        <div class="player-info" id="player-info"></div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="view" id="view-settings">
+      <h2>设置</h2>
+      <div class="setting-row">
+        <span>节点角色</span><strong id="set-role">--</strong>
+      </div>
+      <div class="setting-row">
+        <span>实例 ID</span><strong id="set-instance">--</strong>
+      </div>
+      <div class="setting-row">
+        <span>数据库</span><strong id="set-db">--</strong>
+      </div>
+      <div class="setting-row">
+        <span>媒体目录</span><strong id="set-movies">--</strong>
+      </div>
+      <div class="setting-row">
+        <span>API 文档</span><a href="/docs" target="_blank">/docs</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/js/app.js" type="module"></script>
+</body>
+</html>
