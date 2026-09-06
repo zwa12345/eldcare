@@ -191,9 +191,9 @@ def probe_media(path: Path) -> ProbeResult:
             res.duration_sec = int(float(duration))
         except (ValueError, TypeError):
             pass
-    # 容器
-    container = (fmt.get("format_name") or "").split(",")[0]
-    res.container = container or None
+    # 注意：container 不在此处从 format_name 推断——ffprobe 对 .mp4 常返回
+    # "mov,mp4,m4a,3gp,..."，首项是 mov 会导致误判。container 交由调用方
+    # 依据文件后缀决定（_container_from_suffix）。
 
     # 视频/音频流
     streams = data.get("streams") or []
@@ -208,14 +208,33 @@ def probe_media(path: Path) -> ProbeResult:
         except (ValueError, TypeError):
             pass
         if res.height:
-            # 优先用探测到的真实高度
+            # 用视频流的短边高度映射清晰度
             h = min(res.height, res.width) if res.height > res.width else res.height
-            res.resolution = _HEIGHT_TO_RES.get(h)
-        # 若无高度映射，fallback 用命名解析结果（由调用方回填）
+            # 向下取最接近的标准档位
+            res.resolution = _nearest_resolution(h)
     if audio_stream:
         res.audio_codec = audio_stream.get("codec_name")
 
     return res
+
+
+def _nearest_resolution(height: int) -> str | None:
+    """把视频高度映射到最接近的档位（1080/720/480/576/4K）"""
+    levels = [(2160, "4K"), (1080, "1080p"), (720, "720p"), (480, "480p"), (360, "360p")]
+    best = None
+    for lvl, label in levels:
+        if height >= lvl * 0.85:  # 容差 15%
+            best = label
+            break
+    return best
+
+
+def _container_from_suffix(path: Path) -> str:
+    """按文件后缀确定容器名"""
+    return {
+        ".mp4": "mp4", ".m4v": "mp4", ".mkv": "matroska", ".avi": "avi",
+        ".mov": "mov", ".ts": "mpegts", ".webm": "webm",
+    }.get(path.suffix.lower(), (path.suffix or "unknown").lstrip(".").lower())
 
 
 # ---------------------------------------------------------------------------
@@ -261,15 +280,22 @@ def upsert_movie(db: Session, path: Path) -> tuple[Movie, bool]:
     existing = db.query(Movie).filter(Movie.file_path == path_s).first()
 
     if existing:
-        # 已存在：只补空字段（探测信息可能比导入时更全）
+        # 已存在：只补空字段（探测信息可能比导入时更全），不覆盖非空值
+        container = _container_from_suffix(path)
         if not existing.title and parsed.title:
             existing.title = parsed.title
         if existing.duration_sec is None and probe.duration_sec:
             existing.duration_sec = probe.duration_sec
         if existing.file_size is None and file_size:
             existing.file_size = file_size
-        if not existing.container and probe.container:
-            existing.container = probe.container
+        if not existing.container:
+            existing.container = container
+        if not existing.video_codec and probe.video_codec:
+            existing.video_codec = probe.video_codec
+        if not existing.audio_codec and probe.audio_codec:
+            existing.audio_codec = probe.audio_codec
+        if not existing.resolution and (probe.resolution or parsed.resolution):
+            existing.resolution = probe.resolution or parsed.resolution
         db.commit()
         return existing, False
 
@@ -285,7 +311,7 @@ def upsert_movie(db: Session, path: Path) -> tuple[Movie, bool]:
         source=parsed.source,
         video_codec=probe.video_codec,
         audio_codec=probe.audio_codec,
-        container=probe.container or (path.suffix.lstrip(".").lower()),
+        container=_container_from_suffix(path),
         duration_sec=probe.duration_sec,
         file_size=file_size,
         has_subtitle=False,
