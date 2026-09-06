@@ -1,44 +1,23 @@
 # Python
+.venv/
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-env/
-ENV/
-.env
-.env.local
-.env.*.local
-
-# 测试
-.coverage
-coverage/
-htmlcov/
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
-.mypy_cache/
 
-# 构建
-build/
-dist/
-*.egg-info/
+# 环境配置（.env.example 保留提交）
+.env
 
 # 运行时数据
-data/
-!data/.gitkeep
-logs/
+data/movies.db
+data/movies.db-shm
+data/movies.db-wal
+data/logs/
+data/thumbs/
+data/downloads/
+data/subtitles/
+data/movies/
+
+# 日志
 *.log
-
-# 编辑器
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# 系统
-Thumbs.db
-desktop.ini

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app import __version__
 from app.api.schemas import HealthOut
 from app.core.config import Settings, get_settings
 from app.core.db import get_db
@@ -30,6 +31,7 @@ def health(
 
     return HealthOut(
         status="ok" if db_status == "ok" else "degraded",
+        version=__version__,
         instance_id=settings.instance_id,
         node_role=settings.node_role,
         db=db_status,
@@ -42,8 +44,6 @@ def health(
 
 @router.get("/version")
 def version(settings: Settings = Depends(get_settings)) -> dict:
-    from app import __version__
-
     return {
         "version": __version__,
         "instance_id": settings.instance_id,

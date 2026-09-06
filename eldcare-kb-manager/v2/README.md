@@ -5,16 +5,31 @@
 ## 快速开始
 
 ```bash
+# Linux / macOS（含 pi05 节点）
 cd v2
 python -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 cp .env.example .env
 ./.venv/bin/python -m app.main
 # 或：
-./.venv/bin/uvicorn app.main:app --reload --port 8090
+./.venv/bin/uvicorn app.main:app --reload
+```
+
+```powershell
+# Windows（PowerShell）
+cd v2
+python -m venv .venv
+.\.venv\Scripts\pip install -r requirements.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\python -m app.main
+# 或：
+.\.venv\Scripts\uvicorn app.main:app --reload
 ```
 
 浏览器打开 <http://127.0.0.1:8090>。
+
+> 监听地址由 `.env` 的 `ELDCARE_HOST` / `ELDCARE_PORT` 控制（`python -m app.main` 会读取），
+> 默认 `0.0.0.0:8090`；直接用 uvicorn 命令时可用 `--host/--port` 临时覆盖。
 
 ## 模块
 
@@ -26,10 +41,10 @@ cp .env.example .env
 | `app/core/logging.py` | 日志统一格式 |
 | `app/models/` | ORM 模型 |
 | `app/api/` | 路由模块 |
-| `app/services/` | 业务服务（scanner / metadata / thumb / transcoder / sync） |
+| `app/services/` | 业务服务（scanner / metadata / thumb / transcoder / sync）— 规划中，尚未创建 |
 | `app/static/` | 前端单页应用 + PWA |
-| `scripts/` | 运维脚本 |
-| `tests/` | 单元测试 |
+| `scripts/` | 运维脚本（规划中） |
+| `tests/` | 单元测试（规划中，目录暂缺） |
 
 ## 配置（.env）
 
@@ -52,6 +67,7 @@ cp .env.example .env
 ### V2 已实现
 
 - `GET  /api/v2/health` — 健康检查
+- `GET  /api/v2/version` — 版本与实例信息
 - `GET  /api/v2/library/movies` — 影片列表（分页/分类/搜索）
 - `GET  /api/v2/library/movies/{id}` — 影片详情
 - `GET  /api/v2/library/categories` — 分类列表

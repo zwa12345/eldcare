@@ -107,7 +107,10 @@ def stats(db: Session = Depends(get_db)) -> StatsOut:
     ).scalar_one()
 
     fav_count = db.execute(
-        select(func.count()).select_from(base.subquery()).where(Movie.is_favorite.is_(True))
+        select(func.count(Movie.id)).where(
+            Movie.status == "active",
+            Movie.is_favorite.is_(True),
+        )
     ).scalar_one()
 
     # 按分类

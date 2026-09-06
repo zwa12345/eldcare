@@ -100,7 +100,8 @@ function renderCategories(cats) {
       const slug = el.dataset.slug;
       switchTab("library");
       const r = await api.listMovies({ category: slug });
-      renderMovies(r.items);
+      state.movies = r.items || [];
+      renderMovies(state.movies);
     });
   });
 }
@@ -171,7 +172,8 @@ $("#search-input").addEventListener("input", (e) => {
   searchTimer = setTimeout(async () => {
     const q = e.target.value.trim();
     const r = await api.listMovies({ q, size: 60 });
-    renderMovies(r.items);
+    state.movies = r.items || [];
+    renderMovies(state.movies);
   }, 300);
 });
 

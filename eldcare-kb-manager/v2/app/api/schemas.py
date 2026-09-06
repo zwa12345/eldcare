@@ -69,7 +69,7 @@ class StatsOut(BaseModel):
 
 class HealthOut(BaseModel):
     status: str = "ok"
-    version: str = "0.1.0"
+    version: str
     instance_id: str
     node_role: str
     db: str = "ok"

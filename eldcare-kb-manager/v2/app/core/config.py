@@ -11,10 +11,13 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+_BASE_DIR = Path(__file__).resolve().parents[2]  # v2/（项目根）
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="ELDCARE_",
-        env_file=".env",
+        env_file=_BASE_DIR / ".env",  # 相对项目根加载，避免依赖启动 CWD
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -67,7 +70,7 @@ class Settings(BaseSettings):
         - 仅对 *目录* 类字段做 mkdir
         - db_path 是文件路径，只确保其父目录存在
         """
-        base = Path(__file__).resolve().parents[2]  # v2/
+        base = _BASE_DIR
         dir_fields = (
             "data_dir", "movies_dir", "thumbs_dir", "subtitles_dir",
             "downloads_dir", "log_dir",

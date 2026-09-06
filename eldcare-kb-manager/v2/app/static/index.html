@@ -73,5 +73,11 @@
   </main>
 
   <script src="/static/js/app.js" type="module"></script>
+  <script>
+    // 注册 Service Worker（PWA 离线壳）
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>

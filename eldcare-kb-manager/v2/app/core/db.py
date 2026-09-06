@@ -8,7 +8,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import Settings, get_settings
@@ -73,6 +73,14 @@ def init_db() -> None:
 
     engine = get_engine()
     Base.metadata.create_all(bind=engine)
+    # 兼容已存在的旧库：幂等补 watch_history 唯一索引（create_all 不会 ALTER 现有表）
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_watch_history_user_movie "
+                "ON watch_history (user_id, movie_id)"
+            )
+        )
 
 
 @contextmanager

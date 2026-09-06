@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -11,6 +11,9 @@ from app.core.db import Base
 
 class WatchHistory(Base):
     __tablename__ = "watch_history"
+    __table_args__ = (
+        UniqueConstraint("user_id", "movie_id", name="uq_watch_history_user_movie"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, index=True)
