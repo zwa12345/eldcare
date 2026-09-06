@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import (
-    BigInteger, Boolean, DateTime, Float, Integer, String, Text, func,
+    BigInteger, Boolean, DateTime, Float, Integer, String, Text, func, text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -44,7 +44,9 @@ class Movie(Base):
     video_codec: Mapped[Optional[str]] = mapped_column(String(16))  # h264/h265/av1
     audio_codec: Mapped[Optional[str]] = mapped_column(String(32))  # aac/dts/truehd
     container: Mapped[Optional[str]] = mapped_column(String(16))    # mkv/mp4
-    has_subtitle: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_subtitle: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0")
+    )
 
     # 演员 / 类型 / 国家（用 string 存，匹配 pi05 旧字段习惯）
     director: Mapped[Optional[str]] = mapped_column(String(512))
@@ -54,15 +56,25 @@ class Movie(Base):
 
     # 下载来源（兼容 pi05 magnet / status）
     magnet: Mapped[Optional[str]] = mapped_column(Text)
-    download_status: Mapped[str] = mapped_column(String(32), default="none")  # none/local/external/pending
+    download_status: Mapped[str] = mapped_column(
+        String(32), default="none", server_default=text("'none'")
+    )  # none/local/external/pending
 
     # 软删除 / 状态
-    status: Mapped[str] = mapped_column(String(16), default="active", index=True)  # active/deleted/pending
+    status: Mapped[str] = mapped_column(
+        String(16), default="active", server_default=text("'active'"), index=True
+    )  # active/deleted/pending
 
     # 统计
-    view_count: Mapped[int] = mapped_column(Integer, default=0)
-    like_count: Mapped[int] = mapped_column(Integer, default=0)
-    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    view_count: Mapped[int] = mapped_column(
+        Integer, default=0, server_default=text("0")
+    )
+    like_count: Mapped[int] = mapped_column(
+        Integer, default=0, server_default=text("0")
+    )
+    is_favorite: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0"), index=True
+    )
 
     # 时间戳
     added_at: Mapped[datetime] = mapped_column(

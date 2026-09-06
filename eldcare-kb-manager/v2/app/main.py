@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
-from app.api import health, library, player
+from app.api import admin, health, library, player
 from app.core.config import get_settings
 from app.core.db import init_db
 from app.core.logging import logger, setup_logging
@@ -57,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api/v2")
     app.include_router(library.router, prefix="/api/v2")
     app.include_router(player.router, prefix="/api/v2")
+    app.include_router(admin.router, prefix="/api/v2")
 
     # 静态资源（CSS / JS / icons）
     static_dir = Path(__file__).resolve().parent / "static"
